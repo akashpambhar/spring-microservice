@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class InventoryResponse {
-    private Long productId;
+public class Inventory {
+
+    private String productId;
     private Integer quantity;
 }

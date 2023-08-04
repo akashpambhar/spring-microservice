@@ -22,15 +22,15 @@ public class InventoryController {
         return inventoryService.getAllInventory();
     }
 
-    @GetMapping("/stock")
-    @ResponseStatus(HttpStatus.OK)
-    public List<InventoryResponse> isInStock(@RequestParam List<Long> productId) {
-        return inventoryService.isInStock(productId);
-    }
-
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void createProduct(@RequestBody InventoryRequest inventoryRequest) {
+    public void createInventory(@RequestBody InventoryRequest inventoryRequest) {
         inventoryService.createInventory(inventoryRequest);
+    }
+
+    @PutMapping("/stock")
+    @ResponseStatus(HttpStatus.OK)
+    public String updateStock(@RequestBody List<InventoryRequest> inventoryRequests) {
+        return inventoryService.updateStock(inventoryRequests);
     }
 }

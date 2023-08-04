@@ -1,6 +1,6 @@
 package com.adiths.orderservice.service;
 
-import com.adiths.orderservice.dto.InventoryResponse;
+import com.adiths.orderservice.dto.Inventory;
 import com.adiths.orderservice.dto.ItemDto;
 import com.adiths.orderservice.dto.OrderRequest;
 import com.adiths.orderservice.dto.OrderResponse;
@@ -11,9 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,28 +42,23 @@ public class OrderService {
         order.setItems(items);
         items.forEach(item -> item.setOrder(order));
 
-        List<Long> productIds = order.getItems().stream()
-                .map(Item::getProductId)
+        List<Inventory> inventoryList = order.getItems().stream()
+                .map(this::mapToInventory)
                 .toList();
 
-        InventoryResponse[] inventoryResponse = webClient.get()
-                .uri("http://localhost:8082/api/inventory/stock",
-                        uriBuilder -> uriBuilder.queryParam("productId", productIds).build())
+        String res = webClient.put()
+                .uri("http://localhost:8082/api/inventory/stock")
+                .body(BodyInserters.fromValue(inventoryList))
                 .retrieve()
-                .bodyToMono(InventoryResponse[].class)
+                .bodyToMono(String.class)
                 .block();
 
-        boolean allProductsInStock = inventoryResponse.length == order.getItems().size() &&
-                Arrays.stream(inventoryResponse)
-                        .allMatch(inventoryItem -> order.getItems().stream()
-                                .allMatch(orderItem -> orderItem.getQuantity() <= inventoryItem.getQuantity()));
-
-        if (allProductsInStock) {
+        if(res.equals("Inventory Updated")) {
             orderRepository.save(order);
             return "Order Saved";
-        } else {
-            return "Product is not in stock, please try again later";
         }
+
+        return res;
     }
 
     private Item mapToDto(ItemDto itemDto) {
@@ -88,6 +83,13 @@ public class OrderService {
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
                 .items(order.getItems().stream().map(this::mapToDto).toList())
+                .build();
+    }
+
+    private Inventory mapToInventory(Item item) {
+        return Inventory.builder()
+                .productId(item.getProductId())
+                .quantity(item.getQuantity())
                 .build();
     }
 }
