@@ -6,6 +6,8 @@ import com.adiths.productservice.model.Product;
 import com.adiths.productservice.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,7 +19,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-    public void createProduct(ProductRequest productRequest) {
+    public ResponseEntity<String> createProduct(ProductRequest productRequest) {
         Product product = Product.builder()
                 .name(productRequest.getName())
                 .description(productRequest.getDescription())
@@ -25,13 +27,13 @@ public class ProductService {
                 .build();
 
         productRepository.save(product);
-        log.info("Product {} is saved", product.getId());
+
+        return new ResponseEntity<>("Product Created", HttpStatus.CREATED);
     }
 
-    public List<ProductResponse> getAllProducts() {
+    public ResponseEntity<List<ProductResponse>> getAllProducts() {
         List<Product> products = productRepository.findAll();
-
-        return products.stream().map(this::mapToProductResponse).toList();
+        return new ResponseEntity<>(products.stream().map(this::mapToProductResponse).toList(), HttpStatus.OK);
     }
 
     private ProductResponse mapToProductResponse(Product product) {

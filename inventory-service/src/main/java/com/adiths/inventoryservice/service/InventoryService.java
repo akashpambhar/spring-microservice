@@ -6,12 +6,12 @@ import com.adiths.inventoryservice.model.Inventory;
 import com.adiths.inventoryservice.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,41 +20,27 @@ public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
 
-    public void createInventory(InventoryRequest inventoryRequest) {
+    public ResponseEntity<String> createInventory(InventoryRequest inventoryRequest) {
         Inventory inventory = new Inventory();
         inventory.setQuantity(inventoryRequest.getQuantity());
         inventory.setProductId(inventoryRequest.getProductId());
         inventoryRepository.save(inventory);
 
-        log.info("Inventory {} is saved", inventory.getId());
-    }
-
-    public void updateInventoryItems(List<Inventory> inventoryItems) {
-        log.info("Inventory Items Updated!");
-        inventoryRepository.saveAll(inventoryItems);
+        return new ResponseEntity<>("Inventory Created", HttpStatus.CREATED);
     }
 
     @Transactional
-    public String updateStock(List<InventoryRequest> inventoryRequests) {
-        Map<String, Integer> productQuantity = inventoryRequests.stream()
-                .collect(Collectors.toMap(InventoryRequest::getProductId, InventoryRequest::getQuantity));
-        log.info("keys :: {}", productQuantity.keySet());
-        Map<String, Inventory> inventoryMap = inventoryRepository.findByProductIdIn(productQuantity.keySet()).stream()
-                .collect(Collectors.toMap(Inventory::getProductId, inventory -> inventory));
-
-        List<Inventory> inventoryList = null;
-        for (String productId : productQuantity.keySet()) {
-            Inventory inventory = inventoryMap.get(productId);
-            inventory.setQuantity(inventory.getQuantity() - productQuantity.get(productId));
-            inventoryList.add(inventory);
+    public ResponseEntity<String> updateStock(List<InventoryRequest> inventoryRequests) {
+        for (InventoryRequest inventoryRequest : inventoryRequests) {
+            Inventory inventory = inventoryRepository.findByProductId(inventoryRequest.getProductId());
+            inventory.setQuantity(inventory.getQuantity() - inventoryRequest.getQuantity());
         }
-        inventoryRepository.saveAll(inventoryList);
 
-        return "Inventory Updated";
+        return new ResponseEntity<>("Inventory Updated", HttpStatus.OK);
     }
 
-    public List<InventoryResponse> getAllInventory() {
-        return inventoryRepository.findAll().stream().map(this::mapToInventoryResponse).toList();
+    public ResponseEntity<List<InventoryResponse>> getAllInventory() {
+        return new ResponseEntity<>(inventoryRepository.findAll().stream().map(this::mapToInventoryResponse).toList(), HttpStatus.OK);
     }
 
     private InventoryResponse mapToInventoryResponse(Inventory inventory) {

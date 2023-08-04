@@ -4,7 +4,7 @@ import com.adiths.inventoryservice.dto.InventoryRequest;
 import com.adiths.inventoryservice.dto.InventoryResponse;
 import com.adiths.inventoryservice.service.InventoryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,20 +17,17 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
-    public List<InventoryResponse> getAllInventory() {
+    public ResponseEntity<List<InventoryResponse>> getAllInventory() {
         return inventoryService.getAllInventory();
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public void createInventory(@RequestBody InventoryRequest inventoryRequest) {
-        inventoryService.createInventory(inventoryRequest);
+    public ResponseEntity<String> createInventory(@RequestBody InventoryRequest inventoryRequest) {
+        return inventoryService.createInventory(inventoryRequest);
     }
 
     @PutMapping("/stock")
-    @ResponseStatus(HttpStatus.OK)
-    public String updateStock(@RequestBody List<InventoryRequest> inventoryRequests) {
+    public ResponseEntity<String> updateStock(@RequestBody List<InventoryRequest> inventoryRequests) {
         return inventoryService.updateStock(inventoryRequests);
     }
 }

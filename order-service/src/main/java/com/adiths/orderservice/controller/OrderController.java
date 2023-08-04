@@ -4,7 +4,7 @@ import com.adiths.orderservice.dto.OrderRequest;
 import com.adiths.orderservice.dto.OrderResponse;
 import com.adiths.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,14 +17,12 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
-    public List<OrderResponse> getAllOrders() {
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
         return orderService.getAllOrders();
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public String placeOrder(@RequestBody OrderRequest orderRequest) {
+    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
         return orderService.placeOrder(orderRequest);
     }
 }

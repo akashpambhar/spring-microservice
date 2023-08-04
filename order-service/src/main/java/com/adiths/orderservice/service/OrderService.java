@@ -9,6 +9,10 @@ import com.adiths.orderservice.model.Order;
 import com.adiths.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -26,11 +30,11 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final WebClient webClient;
 
-    public List<OrderResponse> getAllOrders() {
-        return orderRepository.findAll().stream().map(this::mapToOrderResponse).toList();
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
+        return new ResponseEntity<>(orderRepository.findAll().stream().map(this::mapToOrderResponse).toList(), HttpStatus.OK);
     }
 
-    public String placeOrder(OrderRequest orderRequest) {
+    public ResponseEntity<String> placeOrder(OrderRequest orderRequest) {
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
 
@@ -46,19 +50,20 @@ public class OrderService {
                 .map(this::mapToInventory)
                 .toList();
 
-        String res = webClient.put()
+        ResponseEntity<String> res = webClient.put()
                 .uri("http://localhost:8082/api/inventory/stock")
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .body(BodyInserters.fromValue(inventoryList))
                 .retrieve()
-                .bodyToMono(String.class)
+                .toEntity(String.class)
                 .block();
 
-        if(res.equals("Inventory Updated")) {
+        if (res.getStatusCode().equals(HttpStatus.OK)) {
             orderRepository.save(order);
-            return "Order Saved";
+            return new ResponseEntity<>("Order Saved", HttpStatus.CREATED);
         }
 
-        return res;
+        return new ResponseEntity<>("Order is not placed", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     private Item mapToDto(ItemDto itemDto) {
