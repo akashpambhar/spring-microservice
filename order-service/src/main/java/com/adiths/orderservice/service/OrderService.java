@@ -28,7 +28,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
 
     public ResponseEntity<List<OrderResponse>> getAllOrders() {
         return new ResponseEntity<>(orderRepository.findAll().stream().map(this::mapToOrderResponse).toList(), HttpStatus.OK);
@@ -50,8 +50,8 @@ public class OrderService {
                 .map(this::mapToInventory)
                 .toList();
 
-        ResponseEntity<String> res = webClient.put()
-                .uri("http://localhost:8082/api/inventory/stock")
+        ResponseEntity<String> res = webClientBuilder.build().put()
+                .uri("http://inventory-service/api/inventory/stock")
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .body(BodyInserters.fromValue(inventoryList))
                 .retrieve()
