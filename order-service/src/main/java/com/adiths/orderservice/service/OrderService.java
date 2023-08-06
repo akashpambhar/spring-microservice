@@ -4,6 +4,7 @@ import com.adiths.orderservice.dto.Inventory;
 import com.adiths.orderservice.dto.ItemDto;
 import com.adiths.orderservice.dto.OrderRequest;
 import com.adiths.orderservice.dto.OrderResponse;
+import com.adiths.orderservice.event.OrderPlacedEvent;
 import com.adiths.orderservice.model.Item;
 import com.adiths.orderservice.model.Order;
 import com.adiths.orderservice.repository.OrderRepository;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -29,6 +31,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final WebClient.Builder webClientBuilder;
+    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     public ResponseEntity<List<OrderResponse>> getAllOrders() {
         return new ResponseEntity<>(orderRepository.findAll().stream().map(this::mapToOrderResponse).toList(), HttpStatus.OK);
@@ -60,6 +63,7 @@ public class OrderService {
 
         if (res.getStatusCode().equals(HttpStatus.OK)) {
             orderRepository.save(order);
+            kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
             return new ResponseEntity<>("Order Saved", HttpStatus.CREATED);
         }
 
