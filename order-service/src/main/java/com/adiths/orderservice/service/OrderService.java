@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.UUID;
@@ -59,12 +61,18 @@ public class OrderService {
                 .body(BodyInserters.fromValue(inventoryList))
                 .retrieve()
                 .toEntity(String.class)
+                .onErrorResume(WebClientResponseException.class,
+                        e -> Mono.just(ResponseEntity.status(e.getStatusCode())
+                                .headers(e.getHeaders())
+                                .body(e.getResponseBodyAsString())))
                 .block();
 
         if (res.getStatusCode().equals(HttpStatus.OK)) {
             orderRepository.save(order);
             kafkaTemplate.send("notificationTopic", new OrderPlacedEvent(order.getOrderNumber()));
             return new ResponseEntity<>("Order Saved", HttpStatus.CREATED);
+        } else if (res.getStatusCode().equals(HttpStatus.NOT_FOUND)) {
+            return new ResponseEntity<>(res.getBody(), res.getStatusCode());
         }
 
         return new ResponseEntity<>("Order is not placed", HttpStatus.INTERNAL_SERVER_ERROR);
